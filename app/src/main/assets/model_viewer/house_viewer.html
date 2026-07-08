@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Visor 3D - Casa ConstruccionIA</title>
+<style>
+  body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; }
+  #info {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; padding: 8px 20px; border-radius: 20px;
+    font-size: 14px; pointer-events: none; z-index: 10;
+    backdrop-filter: blur(4px); white-space: nowrap;
+  }
+  #controls {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px; z-index: 10; flex-wrap: wrap; justify-content: center;
+  }
+  .btn {
+    background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3);
+    padding: 10px 20px; border-radius: 12px; font-size: 13px; cursor: pointer;
+    backdrop-filter: blur(4px); transition: all 0.3s; min-width: 90px;
+    text-align: center; user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .btn:hover, .btn.active { background: rgba(21,101,192,0.7); border-color: #1565C0; }
+  .btn.active { background: #1565C0; }
+  #loading {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    color: #fff; font-size: 18px; z-index: 20;
+  }
+  .spinner {
+    width: 40px; height: 40px; margin: 0 auto 12px;
+    border: 3px solid rgba(255,255,255,0.2); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 480px) {
+    .btn { padding: 8px 14px; font-size: 12px; min-width: 70px; }
+    #controls { gap: 6px; bottom: 16px; }
+    #info { font-size: 12px; padding: 6px 14px; }
+  }
+</style>
+</head>
+<body>
+<div id="loading"><div class="spinner"></div>Cargando modelo 3D...</div>
+<div id="info">🏠 Casa Habitación — Arrastra para rotar · Pellizca para zoom</div>
+<div id="controls">
+  <div class="btn active" id="btnOutside" onclick="viewOutside()">🌳 Exterior</div>
+  <div class="btn" id="btnInside" onclick="viewInside()">🏠 Interior</div>
+  <div class="btn" id="btnTop" onclick="viewTop()">🔽 Planta</div>
+  <div class="btn" id="btnReset" onclick="resetView()">🔄 Reset</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Setup ──
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+scene.fog = new THREE.Fog(0x1a1a2e, 30, 60);
+
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(12, 8, 12);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.prepend(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 3;
+controls.maxDistance = 35;
+controls.maxPolarAngle = Math.PI / 2.1;
+controls.target.set(0, 2, 0);
+
+// ── Luces ──
+const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+scene.add(ambientLight);
+
+const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x362d25, 0.8);
+scene.add(hemisphereLight);
+
+const sunLight = new THREE.DirectionalLight(0xffeedd, 2.5);
+sunLight.position.set(15, 20, 10);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 50;
+sunLight.shadow.camera.left = -20;
+sunLight.shadow.camera.right = 20;
+sunLight.shadow.camera.top = 20;
+sunLight.shadow.camera.bottom = -20;
+scene.add(sunLight);
+
+const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
+fillLight.position.set(-10, 5, -10);
+scene.add(fillLight);
+
+const sunTarget = new THREE.Object3D();
+sunTarget.position.set(0, 0, 0);
+sunLight.target = sunTarget;
+scene.add(sunTarget);
+
+// ── Suelo ──
+const groundGeo = new THREE.PlaneGeometry(40, 40);
+const groundMat = new THREE.MeshStandardMaterial({
+  color: 0x2d5a2d,
+  roughness: 0.9,
+  metalness: 0
+});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.05;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Grid auxiliar
+const gridHelper = new THREE.GridHelper(40, 40, 0x444444, 0x333333);
+gridHelper.position.y = 0;
+scene.add(gridHelper);
+
+// ── Materiales ──
+const materials = {
+  wall: new THREE.MeshStandardMaterial({ color: 0xf5f0e1, roughness: 0.8, metalness: 0 }),
+  wallInterior: new THREE.MeshStandardMaterial({ color: 0xfff8e7, roughness: 0.9, metalness: 0 }),
+  roof: new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9, metalness: 0 }),
+  roofTile: new THREE.MeshStandardMaterial({ color: 0xa0522d, roughness: 0.8, metalness: 0.1 }),
+  floor: new THREE.MeshStandardMaterial({ color: 0xc4a87a, roughness: 0.7, metalness: 0 }),
+  floorTile: new THREE.MeshStandardMaterial({ color: 0xd4b896, roughness: 0.6, metalness: 0 }),
+  window: new THREE.MeshStandardMaterial({
+    color: 0x87ceeb, transparent: true, opacity: 0.4, roughness: 0, metalness: 0.1, side: THREE.DoubleSide
+  }),
+  windowFrame: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.1 }),
+  door: new THREE.MeshStandardMaterial({ color: 0x5d3a1a, roughness: 0.8, metalness: 0 }),
+  doorHandle: new THREE.MeshStandardMaterial({ color: 0xdaa520, roughness: 0.3, metalness: 0.8 }),
+  foundation: new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.9, metalness: 0 }),
+  glassRailing: new THREE.MeshStandardMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.3, roughness: 0, metalness: 0.1, side: THREE.DoubleSide
+  }),
+  woodDeck: new THREE.MeshStandardMaterial({ color: 0x8b6914, roughness: 0.9, metalness: 0 }),
+  chimney: new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9, metalness: 0 }),
+  highlight: new THREE.MeshStandardMaterial({
+    color: 0x1565C0, transparent: true, opacity: 0.15, side: THREE.DoubleSide
+  })
+};
+
+const house = new THREE.Group();
+
+// ── Dimensiones ──
+const W = 8;   // ancho total
+const D = 10;  // fondo
+const H = 3;   // altura muros
+const roofH = 2.5; // altura techo
+
+// ── CIMENTACIÓN ──
+const found = new THREE.Mesh(
+  new THREE.BoxGeometry(W + 0.6, 0.3, D + 0.6),
+  materials.foundation
+);
+found.position.y = 0.15;
+found.receiveShadow = true;
+found.castShadow = true;
+house.add(found);
+
+// ── PISO ──
+const floorMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(W, 0.15, D),
+  materials.floor
+);
+floorMesh.position.y = 0.3;
+floorMesh.receiveShadow = true;
+house.add(floorMesh);
+
+// ── PAREDES EXTERIORES ──
+const wallThick = 0.2;
+
+// Pared frontal (z positivo)
+function createWall(w, h, d, mat, x, y, z, name) {
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  wall.position.set(x, y, z);
+  wall.castShadow = true;
+  wall.receiveShadow = true;
+  wall.name = name || '';
+  return wall;
+}
+
+// Frente (con aberturas para puerta y ventanas)
+function buildFrontWall() {
+  const group = new THREE.Group();
+  // Panel principal
+  const main = new THREE.Mesh(
+    new THREE.BoxGeometry(W, H, wallThick),
+    materials.wall
+  );
+  main.position.set(0, H/2 + 0.3, D/2);
+  main.castShadow = true;
+  main.receiveShadow = true;
+  group.add(main);
+
+  // Recortar aberturas con materiales más oscuros (simulación)
+  // Puerta principal (centro)
+  const doorHole = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 2.2, wallThick + 0.01),
+    new THREE.MeshStandardMaterial({ color: 0x1a1a2e })
+  );
+  doorHole.position.set(0, 1.1 + 0.3, D/2 + 0.01);
+  group.add(doorHole);
+
+  // Ventana izquierda
+  const win1 = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 1.5, wallThick + 0.01),
+    new THREE.MeshStandardMaterial({ color: 0x1a1a2e })
+  );
+  win1.position.set(-2.5, 1.8 + 0.3, D/2 + 0.01);
+  group.add(win1);
+
+  // Ventana derecha
+  const win2 = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 1.5, wallThick + 0.01),
+    new THREE.MeshStandardMaterial({ color: 0x1a1a2e })
+  );
+  win2.position.set(2.5, 1.8 + 0.3, D/2 + 0.01);
+  group.add(win2);
+
+  return group;
+}
+
+// Pared trasera
+function buildBackWall() {
+  const group = new THREE.Group();
+  const main = new THREE.Mesh(
+    new THREE.BoxGeometry(W, H, wallThick),
+    materials.wall
+  );
+  main.position.set(0, H/2 + 0.3, -D/2);
+  main.castShadow = true;
+  main.receiveShadow = true;
+  group.add(main);
+
+  // Ventana trasera grande
+  const win = new THREE.Mesh(
+    new THREE.BoxGeometry(2.5, 1.8, wallThick + 0.01),
+    new THREE.MeshStandardMaterial({ color: 0x1a1a2e })
+  );
+  win.position.set(0, 1.8 + 0.3, -D/2 - 0.01);
+  group.add(win);
+
+  return group;
+}
+
+// Pared izquierda
+function buildLeftWall() {
+  const group = new THREE.Group();
+  const main = new THREE.Mesh(
+    new THREE.BoxGeometry(wallThick, H, D),
+    materials.wall
+  );
+  main.position.set(-W/2, H/2 + 0.3, 0);
+  main.castShadow = true;
+  main.receiveShadow = true;
+  group.add(main);
+
+  // Ventanas laterales
+  for (let z of [-2.5, 2.5]) {
+    const win = new THREE.Mesh(
+      new THREE.BoxGeometry(wallThick + 0.01, 1.5, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a2e })
+    );
+    win.position.set(-W/2 - 0.01, 1.8 + 0.3, z);
+    group.add(win);
+  }
+  return group;
+}
+
+// Pared derecha
+function buildRightWall() {
+  const group = new THREE.Group();
+  const main = new THREE.Mesh(
+    new THREE.BoxGeometry(wallThick, H, D),
+    materials.wall
+  );
+  main.position.set(W/2, H/2 + 0.3, 0);
+  main.castShadow = true;
+  main.receiveShadow = true;
+  group.add(main);
+
+  // Ventanas laterales
+  for (let z of [-2.5, 2.5]) {
+    const win = new THREE.Mesh(
+      new THREE.BoxGeometry(wallThick + 0.01, 1.5, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a2e })
+    );
+    win.position.set(W/2 + 0.01, 1.8 + 0.3, z);
+    group.add(win);
+  }
+  return group;
+}
+
+house.add(buildFrontWall());
+house.add(buildBackWall());
+house.add(buildLeftWall());
+house.add(buildRightWall());
+
+// ── PUERTA ──
+const doorMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(1.1, 2.1, 0.1),
+  materials.door
+);
+doorMesh.position.set(0, 1.05 + 0.3, D/2 - 0.05);
+doorMesh.castShadow = true;
+house.add(doorMesh);
+
+// Manija
+const handle = new THREE.Mesh(
+  new THREE.SphereGeometry(0.06, 8, 8),
+  materials.doorHandle
+);
+handle.position.set(0.4, 0.9 + 0.3, D/2 - 0.02);
+house.add(handle);
+
+// ── VENTANAS (vidrio + marco) ──
+function addWindow(x, y, z, w, h, rx) {
+  const group = new THREE.Group();
+  // Vidrio
+  const glass = new THREE.Mesh(
+    new THREE.PlaneGeometry(w - 0.1, h - 0.1),
+    materials.window
+  );
+  glass.position.set(0, 0, 0);
+  group.add(glass);
+  // Marco
+  const frameMat = materials.windowFrame;
+  const fw = 0.05;
+  // marcos horizontales
+  const topFrame = new THREE.Mesh(new THREE.BoxGeometry(w, fw, 0.03), frameMat);
+  topFrame.position.set(0, h/2, 0); group.add(topFrame);
+  const botFrame = new THREE.Mesh(new THREE.BoxGeometry(w, fw, 0.03), frameMat);
+  botFrame.position.set(0, -h/2, 0); group.add(botFrame);
+  // verticales
+  const leftFrame = new THREE.Mesh(new THREE.BoxGeometry(fw, h, 0.03), frameMat);
+  leftFrame.position.set(-w/2, 0, 0); group.add(leftFrame);
+  const rightFrame = new THREE.Mesh(new THREE.BoxGeometry(fw, h, 0.03), frameMat);
+  rightFrame.position.set(w/2, 0, 0); group.add(rightFrame);
+
+  group.position.set(x, y, z);
+  if (rx) group.rotation.y = rx;
+  return group;
+}
+
+// Ventanas frontales
+house.add(addWindow(-2.5, 1.8 + 0.3, D/2 + 0.02, 1.4, 1.4, 0));
+house.add(addWindow(2.5, 1.8 + 0.3, D/2 + 0.02, 1.4, 1.4, 0));
+// Ventana trasera
+house.add(addWindow(0, 1.8 + 0.3, -D/2 - 0.02, 2.4, 1.7, 0));
+// Ventanas laterales
+house.add(addWindow(-W/2 - 0.02, 1.8 + 0.3, -2.5, 1.1, 1.4, Math.PI/2));
+house.add(addWindow(-W/2 - 0.02, 1.8 + 0.3, 2.5, 1.1, 1.4, Math.PI/2));
+house.add(addWindow(W/2 + 0.02, 1.8 + 0.3, -2.5, 1.1, 1.4, -Math.PI/2));
+house.add(addWindow(W/2 + 0.02, 1.8 + 0.3, 2.5, 1.1, 1.4, -Math.PI/2));
+
+// ── TECHO (a dos aguas) ──
+function buildRoof() {
+  const group = new THREE.Group();
+  const overhang = 0.8;
+  const rw = W/2 + overhang;
+  const rd = D/2 + overhang;
+
+  // Dos planos inclinados
+  const roofGeom = new THREE.BufferGeometry();
+  const vertices = new Float32Array([
+    // Lado frontal
+    -rw, H + 0.3 + roofH, rd,   // pico
+    -rw - 0.5, 0.3, rd,         // alero derecho
+    rw + 0.5, 0.3, rd,          // alero izquierdo
+
+    // Lado trasero
+    -rw, H + 0.3 + roofH, -rd,
+    -rw - 0.5, 0.3, -rd,
+    rw + 0.5, 0.3, -rd,
+
+    // Laterales (triángulos)
+    -rw, H + 0.3 + roofH, rd,
+    -rw, H + 0.3 + roofH, -rd,
+    -rw - 0.5, 0.3, rd,
+  ]);
+  // Esto es complejo, mejor usar planos inclinados simples
+  // Limpiar y usar approach más simple
+  return group;
+}
+
+// Techo simplificado con dos planos inclinados
+const roofMat = materials.roof;
+const roofAngle = 0.5;
+const roofOverhang = 0.6;
+
+// Plano frontal del techo
+const roofFront = new THREE.Mesh(
+  new THREE.BoxGeometry(W + 1.2, 0.1, D/2 + roofOverhang),
+  roofMat
+);
+roofFront.position.set(0, H + 0.3 + roofH/2, D/4 + 0.2);
+roofFront.rotation.x = -roofAngle;
+roofFront.castShadow = true;
+house.add(roofFront);
+
+// Plano trasero del techo
+const roofBack = new THREE.Mesh(
+  new THREE.BoxGeometry(W + 1.2, 0.1, D/2 + roofOverhang),
+  roofMat
+);
+roofBack.position.set(0, H + 0.3 + roofH/2, -D/4 - 0.2);
+roofBack.rotation.x = roofAngle;
+roofBack.castShadow = true;
+house.add(roofBack);
+
+// Cumbrera
+const ridge = new THREE.Mesh(
+  new THREE.BoxGeometry(W + 1, 0.15, 0.2),
+  roofMat
+);
+ridge.position.set(0, H + 0.3 + roofH, 0);
+ridge.castShadow = true;
+house.add(ridge);
+
+// ── CHIMENEA ──
+const chimney = new THREE.Mesh(
+  new THREE.BoxGeometry(0.6, 1.8, 0.6),
+  materials.chimney
+);
+chimney.position.set(2.5, H + 0.3 + roofH + 0.5, -1.5);
+chimney.castShadow = true;
+house.add(chimney);
+
+// ── PAREDES INTERIORES (distribución) ──
+const interiorMat = materials.wallInterior;
+
+function addInnerWall(x, z, w, hz, rotY) {
+  const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(w, H, hz),
+    interiorMat
+  );
+  wall.position.set(x, H/2 + 0.3, z);
+  wall.castShadow = true;
+  wall.receiveShadow = true;
+  return wall;
+}
+
+// Pared divisoria principal (separa sala/comedor de recámaras)
+house.add(addInnerWall(0, -1, W - 1.5, 0.15, 0));
+// Pared de pasillo
+house.add(addInnerWall(-2.2, 2, 0.15, 3, 0));
+house.add(addInnerWall(2.2, 2, 0.15, 3, 0));
+
+// ── CORTE TRANSVERSAL (para ver interior) ──
+// Agregar un semi-plano de corte que se activa con botón
+const sectionPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(W + 2, H + roofH + 1),
+  new THREE.MeshBasicMaterial({
+    color: 0x1a1a2e,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.95
+  })
+);
+sectionPlane.position.set(0, H/2 + 0.3 + 0.5, 0);
+sectionPlane.rotation.y = 0;
+sectionPlane.visible = false;
+sectionPlane.name = 'sectionPlane';
+house.add(sectionPlane);
+
+// ── MOBILIARIO SIMPLE (referencias) ──
+function addFurniture(w, h, d, color, x, y, z) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.8 })
+  );
+  mesh.position.set(x, y, z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+// Mesa
+house.add(addFurniture(1.2, 0.75, 0.8, 0x8B4513, -1.5, 0.75 + 0.3, 0.5));
+// Sillones
+house.add(addFurniture(0.6, 0.5, 0.6, 0x4682B4, -2.2, 0.5 + 0.3, 0.5));
+house.add(addFurniture(0.6, 0.5, 0.6, 0x4682B4, -1.5, 0.5 + 0.3, 1.2));
+// Cama
+house.add(addFurniture(1.4, 0.5, 1.9, 0xDEB887, 2.5, 0.5 + 0.3, -3));
+// Closet
+house.add(addFurniture(1.2, 2.0, 0.5, 0xA0522D, 3.4, 1.0 + 0.3, -2.5));
+
+// ── ESCENARIO ──
+// Árboles simples
+function addTree(x, z) {
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.15, 0.2, 1.5),
+    new THREE.MeshStandardMaterial({ color: 0x5d3a1a })
+  );
+  trunk.position.set(x, 0.75, z);
+  trunk.castShadow = true;
+  scene.add(trunk);
+
+  const foliage = new THREE.Mesh(
+    new THREE.SphereGeometry(0.8, 6, 6),
+    new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 })
+  );
+  foliage.position.set(x, 1.8, z);
+  foliage.castShadow = true;
+  scene.add(foliage);
+}
+
+addTree(-6, -5);
+addTree(7, 6);
+addTree(-7, 4);
+addTree(6, -6);
+
+// ── Añadir casa a escena ──
+scene.add(house);
+
+// ── Room Labels (raycaster para mostrar al hover) ──
+const rooms = [
+  { name: 'Sala/Comedor', x: -1, z: 1 },
+  { name: 'Cocina', x: -2.5, z: -2.5 },
+  { name: 'Recámara 1', x: 2.5, z: -2 },
+  { name: 'Recámara 2', x: 2.5, z: 2.5 },
+  { name: 'Baño', x: -2, z: -3.5 },
+  { name: 'Pasillo', x: 0, z: 0 }
+];
+
+// ── Animación ──
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// ── Resize ──
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ── Ocultar loading ──
+document.getElementById('loading').style.display = 'none';
+
+// ── Funciones de cámara ──
+function animateCamera(targetPos, targetLook) {
+  const start = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+  const startTarget = { x: controls.target.x, y: controls.target.y, z: controls.target.z };
+  const duration = 1000;
+  const startTime = Date.now();
+
+  function update() {
+    const elapsed = Date.now() - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    // Ease in-out
+    const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+    camera.position.set(
+      start.x + (targetPos.x - start.x) * ease,
+      start.y + (targetPos.y - start.y) * ease,
+      start.z + (targetPos.z - start.z) * ease
+    );
+    controls.target.set(
+      startTarget.x + (targetLook.x - startTarget.x) * ease,
+      startTarget.y + (targetLook.y - startTarget.y) * ease,
+      startTarget.z + (targetLook.z - startTarget.z) * ease
+    );
+    controls.update();
+
+    if (t < 1) requestAnimationFrame(update);
+  }
+  update();
+}
+
+window.viewOutside = function() {
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btnOutside').classList.add('active');
+  sectionPlane.visible = false;
+  animateCamera(
+    { x: 12, y: 8, z: 12 },
+    { x: 0, y: 2, z: 0 }
+  );
+};
+
+window.viewInside = function() {
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btnInside').classList.add('active');
+  sectionPlane.visible = false;
+  // Cámara dentro de la casa
+  animateCamera(
+    { x: 0.5, y: 1.8, z: 3.5 },
+    { x: 0, y: 1.5, z: 0 }
+  );
+};
+
+window.viewTop = function() {
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btnTop').classList.add('active');
+  sectionPlane.visible = true;
+  sectionPlane.position.y = 1.5;
+  // Vista superior con corte
+  animateCamera(
+    { x: 0, y: 12, z: 0.1 },
+    { x: 0, y: 1.5, z: 0 }
+  );
+};
+
+window.resetView = function() {
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btnOutside').classList.add('active');
+  sectionPlane.visible = false;
+  animateCamera(
+    { x: 12, y: 8, z: 12 },
+    { x: 0, y: 2, z: 0 }
+  );
+};
+
+// Vista inicial
+viewOutside();
+
+// ── Touch support ──
+renderer.domElement.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) controls.enableRotate = true;
+});
+</script>
+</body>
+</html>

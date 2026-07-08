@@ -1,0 +1,43 @@
+# Firebase (cada developer usa su propio proyecto)
+app/google-services.json
+
+# Built application files
+*.apk
+*.ap_
+*.aab
+*.dex
+
+# Files for the ART/Dalvik VM
+*.class
+
+# Java files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+build/
+
+# Gradle files
+.gradle/
+local.properties
+*.iml
+.idea/
+.DS_Store
+
+# Crashlytics
+crashlytics-build.properties
+
+# Emacs
+*~
+\#*\#
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# OS files
+Thumbs.db
+Desktop.ini

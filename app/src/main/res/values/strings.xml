@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ConstruccionIA</string>
+    <string name="nav_webview">Generador IA</string>
+    <string name="nav_gallery">Galería</string>
+    <string name="nav_ocr">OCR Técnico</string>
+    <string name="nav_demo">Proyectos Demo</string>
+    <string name="btn_download">Descargar imagen</string>
+    <string name="btn_export_ppt">Exportar a PPT</string>
+    <string name="btn_copy_text">Copiar texto</string>
+    <string name="btn_edit_text">Editar texto</string>
+    <string name="label_no_images">No hay imágenes aún.\n¡Genera tu primera infografía!</string>
+    <string name="label_loading">Cargando…</string>
+    <string name="label_ocr_processing">Procesando OCR…</string>
+    <string name="toast_downloaded">Imagen descargada en Downloads/ConstruccionIA/</string>
+    <string name="toast_exported">Presentación PPT exportada exitosamente</string>
+    <string name="toast_copied">Texto copiado al portapapeles</string>
+    <string name="permission_storage_rationale">ConstruccionIA necesita acceso al almacenamiento para guardar y compartir tus infografías.</string>
+    <string name="demo_project_title">Proyecto Demo: Casa Habitación</string>
+    <string name="demo_project_description">Infografía técnica de vista explosionada de una casa de 2 pisos. Estructura, instalaciones y acabados.</string>
+</resources>

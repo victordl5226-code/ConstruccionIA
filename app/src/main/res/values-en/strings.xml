@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ConstructionAI</string>
+    <string name="nav_webview">AI Generator</string>
+    <string name="nav_gallery">Gallery</string>
+    <string name="nav_ocr">Technical OCR</string>
+    <string name="nav_demo">Demo Projects</string>
+    <string name="btn_download">Download image</string>
+    <string name="btn_export_ppt">Export to PPT</string>
+    <string name="btn_copy_text">Copy text</string>
+    <string name="btn_edit_text">Edit text</string>
+    <string name="label_no_images">No images yet.\nGenerate your first infographic!</string>
+    <string name="label_loading">Loading…</string>
+    <string name="label_ocr_processing">Processing OCR…</string>
+    <string name="toast_downloaded">Image downloaded to Downloads/ConstructionAI/</string>
+    <string name="toast_exported">PPT presentation exported successfully</string>
+    <string name="toast_copied">Text copied to clipboard</string>
+    <string name="permission_storage_rationale">ConstructionAI needs storage access to save and share your infographics.</string>
+    <string name="demo_project_title">Demo Project: House</string>
+    <string name="demo_project_description">Technical infographic of an exploded view of a 2-story house. Structure, installations and finishes.</string>
+</resources>

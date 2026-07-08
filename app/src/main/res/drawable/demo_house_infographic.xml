@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Placeholder para la infografía demo.
+    Reemplázalo con una imagen real 'demo_house_infographic.png' en res/drawable/
+    para tener el proyecto demo completamente funcional.
+    Formato recomendado: PNG 1200x675px (16:9) de alta calidad.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="400dp"
+    android:height="225dp"
+    android:viewportWidth="400"
+    android:viewportHeight="225">
+    <!-- Fondo -->
+    <path
+        android:fillColor="#E8EAF6"
+        android:pathData="M0,0h400v225H0z" />
+    <!-- Texto placeholder -->
+    <path
+        android:fillColor="#5C6BC0"
+        android:pathData="M80,100h240v5H80zM100,115h200v3H100zM120,130h160v3H120z" />
+    <!-- Icono de casa simplificado -->
+    <path
+        android:fillColor="#7986CB"
+        android:pathData="M180,50L140,80h80L180,50zM150,80v40h60V80H150z" />
+</vector>

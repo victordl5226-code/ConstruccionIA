@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Casa / construcción simplificada -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,22L28,42v38h52V42L54,22z M54,28l20,15v32H34V43L54,28z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,60h20v20H44z" />
+    <path
+        android:fillColor="#B3D4FC"
+        android:pathData="M48,64h4v4h-4zM56,64h4v4h-4zM48,72h4v4h-4zM56,72h4v4h-4z" />
+</vector>
