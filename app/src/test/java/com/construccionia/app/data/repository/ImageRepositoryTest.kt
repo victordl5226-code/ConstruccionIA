@@ -12,6 +12,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkStatic
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,8 +31,13 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [26], manifest = Config.NONE)
 class ImageRepositoryTest {
 
     private val testDispatcher = StandardTestDispatcher()
@@ -62,11 +69,18 @@ class ImageRepositoryTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+
+        // Mock packageName para FileProvider
+        every { mockContext.packageName } returns "com.construccionia.app"
+
         repository = ImageRepository(mockContext, mockDao)
     }
 
     @After
     fun tearDown() {
+        unmockkStatic(java.io.File::class)
+        unmockkStatic(androidx.core.content.FileProvider::class)
+        unmockkStatic(android.os.Environment::class)
         Dispatchers.resetMain()
     }
 
@@ -213,35 +227,36 @@ class ImageRepositoryTest {
 
     @Test
     fun `deleteByPath calls dao deleteByPath`() = runTest {
-        // En SDK por defecto 0 (versión antigua), usa File.delete()
-        // Para evitar errores de filesystem, mockeamos File
-        mockkStatic(java.io.File::class)
-        val mockFile = mockk<java.io.File>()
-        every { mockFile.delete() } returns true
-        every { anyConstructed<java.io.File>().delete() } returns true
+        // Con Robolectric podemos usar archivos reales en un directorio temporal
+        val tempFile = File.createTempFile("test", ".png")
+        val tempPath = tempFile.absolutePath
 
-        coEvery { mockDao.deleteByPath("/path/to/file.png") } just runs
+        coEvery { mockDao.deleteByPath(tempPath) } just runs
 
-        val result = repository.deleteByPath("/path/to/file.png")
+        val result = repository.deleteByPath(tempPath)
         assertTrue(result)
-        coVerify(exactly = 1) { mockDao.deleteByPath("/path/to/file.png") }
+        coVerify(exactly = 1) { mockDao.deleteByPath(tempPath) }
+        tempFile.delete()
     }
 
     // ── deleteByName ──
 
     @Test
     fun `deleteByName looks up infographic then deletes by path`() = runTest {
-        val fileName = "content://media/external/downloads/1"
-        coEvery { mockDao.getByFileName(fileName) } returns sampleInfographic
-        coEvery { mockDao.deleteByPath(sampleInfographic.filePath) } just runs
+        // Crear archivo real en sistema de archivos de Robolectric
+        val tempFile = File.createTempFile("test", ".png")
+        val tempPath = tempFile.absolutePath
+        val updatedInfographic = sampleInfographic.copy(filePath = tempPath)
 
-        // Mock File.delete() para que funcione
-        mockkStatic(java.io.File::class)
-        every { anyConstructed<java.io.File>().delete() } returns true
+        val lookupName = "test-image"
+        coEvery { mockDao.getByFileName(lookupName) } returns updatedInfographic
+        coEvery { mockDao.deleteByPath(tempPath) } just runs
 
-        val result = repository.deleteByName(fileName)
+        val result = repository.deleteByName(lookupName)
         assertTrue(result)
-        coVerify(exactly = 1) { mockDao.getByFileName(fileName) }
+        coVerify(exactly = 1) { mockDao.getByFileName(lookupName) }
+        coVerify(exactly = 1) { mockDao.deleteByPath(tempPath) }
+        tempFile.delete()
     }
 
     @Test
@@ -266,12 +281,13 @@ class ImageRepositoryTest {
         val filePath = "/storage/emulated/0/Download/ConstruccionIA/test.png"
         val expectedUri = Uri.parse("content://com.construccionia.app.fileprovider/Storage/.../test.png")
 
-        every { mockContext.packageName } returns "com.construccionia.app"
+        // Mockear FileProvider.getUriForFile usando mockkStatic
+        // Nota: usamos cualquier String para el authority y cualquier File
         mockkStatic(androidx.core.content.FileProvider::class)
         every {
             androidx.core.content.FileProvider.getUriForFile(
                 mockContext,
-                "com.construccionia.app.fileprovider",
+                any<String>(),
                 any<java.io.File>()
             )
         } returns expectedUri

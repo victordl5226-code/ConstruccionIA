@@ -59,9 +59,9 @@ class ImageJavaScriptInterface(
     @JavascriptInterface
     fun onImageDetected(imageUrl: String, altText: String) {
         Timber.d("Imagen detectada: url=$imageUrl, alt=$altText")
-        scope.launch {
-            _imageEvents.emit(ImageEvent.Detected(imageUrl, altText))
-        }
+        // tryEmit es no-suspending: añade al buffer y retorna inmediatamente.
+        // Con extraBufferCapacity=10, siempre hay espacio disponible.
+        _imageEvents.tryEmit(ImageEvent.Detected(imageUrl, altText))
     }
 
     /**

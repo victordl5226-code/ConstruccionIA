@@ -1,6 +1,16 @@
 package com.construccionia.app.ocr
 
 import android.graphics.Bitmap
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizer
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+import io.mockk.runs
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -12,6 +22,9 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Tests para [OcrHelper].
@@ -24,22 +37,43 @@ import org.junit.Test
  * Para pruebas completas de OCR se requiere un test instrumental en emulador.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [26], manifest = Config.NONE)
 class OcrHelperTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var ocrHelper: OcrHelper
 
-    @Before
+@Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+
+        // Mockear InputImage.fromBitmap para que devuelva un mock de InputImage
+        mockkStatic(InputImage::class)
+        val mockInputImage = mockk<InputImage>(relaxed = true)
+        every { InputImage.fromBitmap(any<Bitmap>(), any()) } returns mockInputImage
+
+        // Mockear TextRecognition para evitar IllegalStateException en tests unitarios
+        mockkStatic(TextRecognition::class)
+        val mockRecognizer = mockk<TextRecognizer>(relaxed = true)
+        every { TextRecognition.getClient(any()) } returns mockRecognizer
+        every { mockRecognizer.close() } just runs
+
+        // Mockear el recognizer.process() para que lance una excepción (como si ML Kit no estuviera disponible)
+        // Simula que ML Kit no está disponible en tests unitarios
+        every { mockRecognizer.process(any<InputImage>()) } throws Exception("ML Kit no disponible en tests unitarios")
+
         ocrHelper = OcrHelper()
     }
 
     @After
     fun tearDown() {
+        unmockkStatic(TextRecognition::class)
         Dispatchers.resetMain()
-        ocrHelper.close()
+        if (::ocrHelper.isInitialized) {
+            ocrHelper.close()
+        }
     }
 
     // ── Manejo de bitmap nulo (simulado) ──
