@@ -11,7 +11,6 @@ import android.provider.MediaStore
 import android.util.Base64
 import timber.log.Timber
 import android.webkit.JavascriptInterface
-import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -176,8 +175,9 @@ class ImageJavaScriptInterface(
                 val connection = url.openConnection()
                 connection.connectTimeout = 15_000
                 connection.readTimeout = 15_000
-                val inputStream = connection.getInputStream()
-                BitmapFactory.decodeStream(inputStream)
+                connection.getInputStream().use { inputStream ->
+                    BitmapFactory.decodeStream(inputStream)
+                }
             }
         }
     }

@@ -17,10 +17,9 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    application: Application,
+    private val app: Application,
     private val authRepository: AuthRepository
-) : AndroidViewModel(application) {
-
+) : AndroidViewModel(app) {
 
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -45,7 +44,7 @@ class AuthViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { user ->
                         Timber.d("Login Google exitoso: ${user.displayName}")
-                        SyncWorker.schedule(getApplication())
+                        SyncWorker.schedule(app)
                     },
                     onFailure = { error ->
                         _authState.value = AuthState.Error(error.message ?: "Error al iniciar sesión")
@@ -66,7 +65,7 @@ class AuthViewModel @Inject constructor(
                 result.fold(
                     onSuccess = {
                         Timber.d("Login email exitoso")
-                        SyncWorker.schedule(getApplication())
+                        SyncWorker.schedule(app)
                     },
                     onFailure = { error ->
                         _authState.value = AuthState.Error(error.message ?: "Error al iniciar sesión")
@@ -87,7 +86,7 @@ class AuthViewModel @Inject constructor(
                 result.fold(
                     onSuccess = {
                         Timber.d("Registro exitoso")
-                        SyncWorker.schedule(getApplication())
+                        SyncWorker.schedule(app)
                     },
                     onFailure = { error ->
                         _authState.value = AuthState.Error(error.message ?: "Error al registrarse")
@@ -101,7 +100,7 @@ class AuthViewModel @Inject constructor(
 
     /** Cierra sesión. */
     fun signOut() {
-        SyncWorker.cancel(getApplication())
+        SyncWorker.cancel(app)
         authRepository.signOut()
     }
 

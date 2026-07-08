@@ -21,11 +21,10 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,7 +60,7 @@ import androidx.compose.ui.unit.dp
 fun AuthScreen(
     authViewModel: AuthViewModel,
     syncViewModel: SyncViewModel,
-    onAuthenticated: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onAuthenticated: () -> Unit,
     onNavigateToDashboard: () -> Unit = {}
 ) {
     val authState by authViewModel.authState.collectAsState()
@@ -258,7 +257,7 @@ fun AuthScreen(
                 onClick = { authViewModel.signOut() },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Default.Logout, null, modifier = Modifier.size(20.dp))
+                Icon(Icons.AutoMirrored.Filled.Logout, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Cerrar sesión")
             }
@@ -391,7 +390,7 @@ private fun AuthLoginForm(
                 }
 
                 if (authState is AuthState.Error) {
-                    Text((authState as AuthState.Error).message,
+                    Text(authState.message,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall)
                     TextButton(onClick = { authViewModel.clearError() }) { Text("Reintentar") }

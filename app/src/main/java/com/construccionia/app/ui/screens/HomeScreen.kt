@@ -20,7 +20,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.NavigateNext
+import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.WebAsset
@@ -68,7 +68,7 @@ fun HomeScreen(
     onNavigateToCamera: () -> Unit,
     onNavigateToEditor: () -> Unit,
     onNavigateTo3DViewer: () -> Unit,
-    onNavigateToOcr: () -> Unit,
+
     onNavigateToExport: () -> Unit,
     onNavigateToSync: () -> Unit,
     onNavigateToDashboard: () -> Unit,
@@ -77,10 +77,10 @@ fun HomeScreen(
     val context = LocalContext.current
     var infographicCount by remember { mutableLongStateOf(0) }
 
-    // Cargar conteo de infografías
+    // Cargar conteo de infografías (usando singleton de Room)
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
-            val db = AppDatabase.create(context)
+            val db = AppDatabase.getInstance(context)
             infographicCount = db.infographicDao().count().first().toLong()
         }
     }
@@ -269,7 +269,7 @@ fun HomeScreen(
                         Text("Proyectos Demo", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Text("Explora infografías de ejemplo", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Icon(Icons.Default.NavigateNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -296,7 +296,7 @@ fun HomeScreen(
                         Text("Sincronización en la nube", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Text("Firebase Auth, Firestore y Storage", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Icon(Icons.Default.NavigateNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -323,7 +323,7 @@ fun HomeScreen(
                         Text("Dashboard y estadísticas", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Text("Métricas de uso e información de la app", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Icon(Icons.Default.NavigateNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 

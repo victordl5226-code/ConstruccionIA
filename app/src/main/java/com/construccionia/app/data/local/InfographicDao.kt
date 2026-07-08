@@ -24,8 +24,8 @@ interface InfographicDao {
     suspend fun getById(id: Long): Infographic?
 
     /** Obtener una infografía por nombre de archivo. */
-    @Query("SELECT * FROM infographics WHERE filePath LIKE :fileName")
-    suspend fun getByFileName(fileName: String): Infographic?
+    @Query("SELECT * FROM infographics WHERE filePath = :filePath")
+    suspend fun getByFileName(filePath: String): Infographic?
 
     /** Buscar infografías por nombre. */
     @Query("SELECT * FROM infographics WHERE name LIKE '%' || :query || '%' ORDER BY created_at DESC")

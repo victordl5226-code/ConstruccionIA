@@ -17,10 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -30,7 +27,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -67,7 +63,6 @@ import com.construccionia.app.viewmodel.DashboardViewModel
 import com.construccionia.app.viewmodel.GalleryViewModel
 import com.construccionia.app.viewmodel.WebViewViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -235,9 +230,6 @@ fun ConstruccionIApp() {
                             },
                             onNavigateTo3DViewer = {
                                 navController.navigate(Screen.ModelViewer.route)
-                            },
-                            onNavigateToOcr = {
-                                navController.navigate(Screen.CameraOcr.route)
                             },
                             onNavigateToExport = {
                                 navController.navigate(Screen.Gallery.route) {
