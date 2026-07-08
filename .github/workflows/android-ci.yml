@@ -120,7 +120,7 @@ jobs:
 
       - name: Create google-services.json placeholder
         run: |
-          echo '{"project_info":{"project_number":"000000000000","project_id":"placeholder","storage_bucket":"placeholder"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000","android_client_info":{"package_name":"construccionia.app"}},"oauth_client":[],"api_key":[{"current_key":"000000000000000000000000000000000000000"}],"services":{"analytics_service":{"status":1},"appinvite_service":{"status":1},"ads_service":{"status":1}}}]}' > app/google-services.json
+          echo '{"project_info":{"project_number":"000000000000","project_id":"placeholder","storage_bucket":"placeholder"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000","android_client_info":{"package_name":"com.construccionia.app"}},"oauth_client":[],"api_key":[{"current_key":"000000000000000000000000000000000000000"}],"services":{"analytics_service":{"status":1},"appinvite_service":{"status":1},"ads_service":{"status":1}}}]}' > app/google-services.json
 
       - name: Compile Debug APK
         run: ./gradlew assembleDebug
