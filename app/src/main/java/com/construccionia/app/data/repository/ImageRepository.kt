@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
 import com.construccionia.app.ConstruccionIAApp
 import com.construccionia.app.data.local.InfographicDao
@@ -145,6 +146,7 @@ class ImageRepository(
         return dir
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun queryMediaStoreImages(): List<Infographic> {
         val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
